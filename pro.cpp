@@ -18,6 +18,11 @@ struct AdjencyElement {
 	struct Edge reverseEdge;
 };
 
+struct AdjChar {
+	char nodeChar;
+	vector<struct AdjencyElement> adjencies;
+};
+
 void printStructEdge(struct Edge edge) {
 	cout << "Startovaci symbol: " << edge.start << endl;
 	cout << "Konecny symbol: " << edge.end << endl;
@@ -33,12 +38,20 @@ void printVectorOfAdjencies(vector<struct AdjencyElement> adjencies) {
 	}
 }
 
+void printVectorCharacterNodes(vector<struct AdjChar> characterNodes) {
+	for(int i = 0; i < characterNodes.size(); i++) {
+		cout << '\n';
+		cout << "Uzol symbol: " << characterNodes[i].nodeChar << endl;
+		printVectorOfAdjencies(characterNodes[i].adjencies);
+	}
+}
+
 int main(int argc, char* argv[])
 {
    	int numprocs, myId;
 	MPI_Status status;	//struct- obsahuje kod- source, tag, error
 	string tree(argv[1]);
-	vector<struct AdjencyElement> adjencies;
+	vector<struct AdjChar> characterNodes;
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);       // zistime pocet procesorov
@@ -46,11 +59,14 @@ int main(int argc, char* argv[])
 
 	if (myId == 0) {
 		cout << tree << endl;
-
 		for(int i = 0; i < tree.size(); i++) {
 			int current = i + 1;
+			struct AdjChar adjChar = {};
+			adjChar.nodeChar = tree[i];
+
 			if ((2 * current) <= tree.size()) {
 				struct Edge edge = {
+
 					tree[current - 1],
 					tree[2 * current - 1]
 				};
@@ -65,7 +81,7 @@ int main(int argc, char* argv[])
 					reverseEdge
 				};
 
-				adjencies.push_back(adjency);
+				adjChar.adjencies.push_back(adjency);
 			}
 
 			if ((2 * current + 1) <= tree.size()) {
@@ -83,12 +99,34 @@ int main(int argc, char* argv[])
 					edge,
 					reverseEdge
 				};
-				adjencies.push_back(adjency);
-			}	
+				adjChar.adjencies.push_back(adjency);
+			}
+
+			if (current / 2 > 0) {
+				int divide = current / 2;
+				struct Edge edge = {
+					tree[current - 1],
+					tree[divide - 1]
+				};
+
+				struct Edge reverseEdge = {
+					tree[divide - 1],
+					tree[current - 1]
+				};
+
+				struct AdjencyElement adjency = {
+					edge,
+					reverseEdge
+				};
+
+				adjChar.adjencies.push_back(adjency);				
+			}
+
+			characterNodes.push_back(adjChar);
 			// cout << typeid(tree[i]).name() << endl;
 		}
 
-		printVectorOfAdjencies(adjencies);
+		printVectorCharacterNodes(characterNodes);
 	}
 
 	MPI_Finalize();
