@@ -31,6 +31,8 @@ struct ProcEdge {
 	int myEdgeNumber;
 	int nextEdgeNumber;
 	bool isForwardEdge;
+	char start;
+	char end;
 };
 
 void printStructEdge(struct Edge edge) {
@@ -72,7 +74,9 @@ struct ProcEdge ETour(vector<struct AdjChar> characterNodes, int myEdgeNumber) {
 	struct ProcEdge procEdge = {
 		-1,
 		-1,
-		false
+		false,
+		'X',
+		'X'
 	};
 	for(int i = 0; i < characterNodes.size(); i++) {
 		int leftSideIndex = 0;
@@ -81,12 +85,18 @@ struct ProcEdge ETour(vector<struct AdjChar> characterNodes, int myEdgeNumber) {
 			if (element.edge.number == myEdgeNumber && procEdge.nextEdgeNumber == -1) {
 				procEdge.nextEdgeNumber = element.reverseEdge.number;
 				procEdge.isForwardEdge = element.edge.isForwardEdge;
+				procEdge.start = element.edge.start;
+				procEdge.end = element.edge.end;
 			}
 			if (element.reverseEdge.number == myEdgeNumber) {
 				if ((characterNodes[i].adjencies.size() - 1) == j) {
 					procEdge.nextEdgeNumber = characterNodes[i].adjencies[0].edge.number;
+					procEdge.start = element.reverseEdge.start;
+					procEdge.end = element.reverseEdge.end;
 				} else {
 					procEdge.nextEdgeNumber = characterNodes[i].adjencies[j + 1].edge.number;
+					procEdge.start = element.reverseEdge.start;
+					procEdge.end = element.reverseEdge.end;
 				}
 			}
 		}
@@ -235,7 +245,13 @@ int main(int argc, char* argv[])
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	if (procEdge.isForwardEdge) {
-		cout << "New valu " << newValue << endl;
+		cout << "New valu " << tree.size() - newValue << endl;
+	}
+
+	if (myId == 0) {
+		for (int i = 0; i <= tree.size() - 1; i++) {
+			
+		}
 	}
 
 	MPI_Finalize();
