@@ -192,66 +192,95 @@ int main(int argc, char* argv[])
 		// cout << typeid(tree[i]).name() << endl;
 	}
 
+    const int nitems=5;
+    int          blocklengths[5] = {1,1,1,1,1};
+    MPI_Datatype types[5] = {MPI_INT, MPI_INT, MPI_INT, MPI_CHAR, MPI_CHAR};
+    MPI_Datatype mpi_edge_type;
+    MPI_Aint     offsets[5];
+
+    offsets[0] = offsetof(struct ProcEdge, myEdgeNumber);
+    offsets[1] = offsetof(struct ProcEdge, nextEdgeNumber);
+	offsets[2] = offsetof(struct ProcEdge, isForwardEdge);
+    offsets[3] = offsetof(struct ProcEdge, start);
+    offsets[4] = offsetof(struct ProcEdge, end);
+
+    MPI_Type_create_struct(nitems, blocklengths, offsets, types, &mpi_edge_type);
+    MPI_Type_commit(&mpi_edge_type);
+
+    struct ProcEdge procEdge;
 	if (myId == 0) {
-		printVectorCharacterNodes(characterNodes);
-	}
-	myEdgeNumber = myId + 1;
+	    // cout << "numprocs " << numprocs << endl;
+		// printVectorCharacterNodes(characterNodes);
+		myEdgeNumber = myId + 1;
 
-	struct ProcEdge procEdge = ETour(characterNodes, myEdgeNumber);
-	procEdge.myEdgeNumber = myEdgeNumber;
+		procEdge = ETour(characterNodes, myEdgeNumber);
+		procEdge.myEdgeNumber = myEdgeNumber;
 
-
-	int initialValue = 1;
-	if (myId == 0) {
-		MPI_Send(&initialValue, 1, MPI_INT, procEdge.nextEdgeNumber - 1, TAG, MPI_COMM_WORLD);
-	} else {
-		MPI_Recv(&initialValue, 1, MPI_INT, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &status);
-		initialValue++;
-		if (procEdge.nextEdgeNumber != 1) {
-			MPI_Send(&initialValue, 1, MPI_INT, procEdge.nextEdgeNumber - 1, TAG, MPI_COMM_WORLD);
+		for (int i = 0; i < numprocs; i++) {
+			struct ProcEdge procEdgeTmp;
+			procEdgeTmp = ETour(characterNodes, i + 1);
+			procEdgeTmp.myEdgeNumber = i + 1;
+			// cout << procEdgeTmp.nextEdgeNumber << endl;
+			MPI_Send(&procEdgeTmp, 1, mpi_edge_type, i, TAG, MPI_COMM_WORLD);
 		}
-	}
-
-	vector<int> suffixSum;
-	int value = 0;
-	suffixSum.reserve(numprocs);
-
-	if (numprocs - 1 == myId) {
-		cout << "My edge number: " << procEdge.myEdgeNumber << endl << "ETour next edge number: " << procEdge.nextEdgeNumber << endl << "Poradie: " << initialValue << endl << endl;
-		value = 0;
 	} else {
-		value = procEdge.isForwardEdge;
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Recv(&procEdge, 1, mpi_edge_type, 0, TAG, MPI_COMM_WORLD, &status);
+	cout << myId << endl;
+ 	MPI_Barrier(MPI_COMM_WORLD);
+	cout << "My edge number: " << procEdge.myEdgeNumber << endl << "ETour next edge number: " << procEdge.nextEdgeNumber << endl << " my Id: " << myId << endl << endl;
+
+	// int initialValue = 1;
+	// if (myId == 0) {
+	// 	MPI_Send(&initialValue, 1, MPI_INT, procEdge.nextEdgeNumber - 1, TAG, MPI_COMM_WORLD);
+	// } else {
+	// 	MPI_Recv(&initialValue, 1, MPI_INT, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &status);
+	// 	initialValue++;
+	// 	if (procEdge.nextEdgeNumber != 1) {
+	// 		MPI_Send(&initialValue, 1, MPI_INT, procEdge.nextEdgeNumber - 1, TAG, MPI_COMM_WORLD);
+	// 	}
+	// }
+
+	// vector<int> suffixSum;
+	// int value = 0;
+	// suffixSum.reserve(numprocs);
+
+	// if (numprocs - 1 == myId) {
+	// 	// cout << "My edge number: " << procEdge.myEdgeNumber << endl << "ETour next edge number: " << procEdge.nextEdgeNumber << endl << "Poradie: " << initialValue << endl << endl;
+	// 	value = 0;
+	// } else {
+	// 	value = procEdge.isForwardEdge;
+	// }
+	// MPI_Barrier(MPI_COMM_WORLD);
 
 
-	int newValue = 0;
-	for (int i = numprocs - 1; i >= 0; i--) {
-		int receivedValue = 0;
-		if (myId == i) {
-			if (myId == numprocs - 1) {
-				MPI_Send(&value, 1, MPI_INT, i - 1, TAG, MPI_COMM_WORLD);
-			} else if (i == 0) {
-				MPI_Recv(&receivedValue, 1, MPI_INT, i + 1, TAG, MPI_COMM_WORLD, &status);
-				newValue = value + receivedValue;			
-			} else {
-				MPI_Recv(&receivedValue, 1, MPI_INT, i + 1, TAG, MPI_COMM_WORLD, &status);
-				newValue = value + receivedValue;
-				MPI_Send(&newValue, 1, MPI_INT, i - 1, TAG, MPI_COMM_WORLD);
-			}	
-		}
-	}
+	// int newValue = 0;
+	// for (int i = numprocs - 1; i >= 0; i--) {
+	// 	int receivedValue = 0;
+
+	// 	if (initialValue == i) {
+	// 		cout << i << " id proc " << myId + 1 << endl;
+	// 		if (initialValue == numprocs - 1) {
+	// 			MPI_Send(&receivedValue, 1, MPI_INT, i - 1, TAG, MPI_COMM_WORLD);
+	// 			// cout << receivedValue << endl;
+	// 		} else if (i == 0) {
+	// 			MPI_Recv(&receivedValue, 1, MPI_INT, i + 1, TAG, MPI_COMM_WORLD, &status);
+	// 			newValue = value + receivedValue;
+	// 			// cout << newValue << endl;	
+	// 		} else {
+	// 			cout << "cakam" << endl;
+	// 			MPI_Recv(&receivedValue, 1, MPI_INT, i + 1, TAG, MPI_COMM_WORLD, &status);
+	// 			newValue = value + receivedValue;
+	// 			cout << "New valu " << newValue << " old " << value << " received " << receivedValue << " id proc " << myId + 1 << " id hrany " << procEdge.myEdgeNumber << " initiialValue " << initialValue << endl;
+	// 			MPI_Send(&newValue, 1, MPI_INT, i - 1, TAG, MPI_COMM_WORLD);
+	// 		}	
+	// 	}
+	// }
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	if (procEdge.isForwardEdge) {
-		cout << "New valu " << tree.size() - newValue << endl;
-	}
-
-	if (myId == 0) {
-		for (int i = 0; i <= tree.size() - 1; i++) {
-			
-		}
+		// cout << "New valu " << newValue << "hrana c" << procEdge.myEdgeNumber << endl;
 	}
 
 	MPI_Finalize();
