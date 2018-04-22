@@ -55,7 +55,7 @@ struct ProcEdge {
 };
 
 /**
-    Vypis struktury hrany.
+    Pomocny ypis struktury hrany.
 
     @param struct Edge edge Hrana
     @return void
@@ -68,7 +68,7 @@ void printStructEdge(struct Edge edge) {
 }
 
 /**
-    Vypis struktury adjency listu.
+    Pomocny vypis struktury adjency listu.
 
     @param vector<struct AdjencyElement> adjencies adjency list
     @return void
@@ -85,7 +85,7 @@ void printVectorOfAdjencies(vector<struct AdjencyElement> adjencies) {
 }
 
 /**
-    Vypis struktury uzlov.
+    Pomocny vypis struktury uzlov.
 
     @param vector<struct AdjChar> characterNodes Jednotlive uzly.
     @return void
@@ -102,12 +102,13 @@ void printVectorCharacterNodes(vector<struct AdjChar> characterNodes) {
     Vypis suffix sum vektora.
 
     @param vector<struct ProcEdge> suffixSumResult Suffix sum vektor.
+    @param *output Pointer na vypisujuci string
+    @param treeSize velkost stromu pre korekciu
     @return void
 */
 void printFinalVector(vector <struct ProcEdge> suffixSumResult, string *output, int treeSize) {
 	for(int i =0; i < suffixSumResult.size(); i++) {
 		if (suffixSumResult[i].isForwardEdge) {
-			// cout << "My number: " << suffixSumResult[i].myEdgeNumber << " My suffix : " << treeSize - suffixSumResult[i].suffixSumValue << " start: " << suffixSumResult[i].start << " end " << suffixSumResult[i].end << endl << flush;
 			(*output)[treeSize - suffixSumResult[i].suffixSumValue] = suffixSumResult[i].end;
 		}
 	}
@@ -291,8 +292,6 @@ int main(int argc, char* argv[])
 	}
 	MPI_Recv(&procEdge, 1, mpi_edge_type, 0, TAG, MPI_COMM_WORLD, &status);
 
-	// cout << "New value " << tree.size() - procEdge.suffixSumValue << "id proc " << myId + 1 << " id hrany " << procEdge.myEdgeNumber <<  " char: " << procEdge.end <<endl;
-
  	//suffix sum
 	int value = 0;
 	if (numprocs - 1 == myId) {
@@ -329,15 +328,14 @@ int main(int argc, char* argv[])
 			MPI_Recv(&suffixSumResult[i], 1, mpi_edge_type, i, TAG, MPI_COMM_WORLD, &status);
 		}
 		endTime = MPI_Wtime();
-		cerr << endTime-startTime;
+		// cerr << endTime-startTime;
 
 		//Vypis preorder na zaklade suffix sum
 		string output;
 		output.resize(tree.size());
 		output[0] = procEdge.start;
 		printFinalVector(suffixSumResult, &output, tree.size());
-		cout << output;
-		cout << endl;
+		cout << output << endl;
 	}
 
 	MPI_Finalize();
